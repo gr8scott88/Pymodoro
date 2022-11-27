@@ -147,7 +147,3 @@ Data/AWS/*
 # !Data/_Template
 # !Data/_Template/*
 
-# Ignore Processed Data Images
-*.png
-Export/
-DescriptiveStats/
