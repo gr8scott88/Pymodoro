@@ -191,7 +191,7 @@ class Pymodoro:
 
 
 if __name__ == '__main__':
-    pymo = Pymodoro
+    pymo = Pymodoro()
 
 
 
