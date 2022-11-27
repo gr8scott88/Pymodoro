@@ -147,3 +147,4 @@ Data/AWS/*
 # !Data/_Template
 # !Data/_Template/*
 
+*.bak
