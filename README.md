@@ -11,4 +11,4 @@ Quick GUI for managing work via pomoro method with the following timing sequeng:
 	Work: 25 min
 	Rest: 15 min 
 	
-Utilizes "play/pause" keyboard command, so will work with any windows media client
+Utilizes "play/pause" keyboard command, so will work with any windows media client. 
