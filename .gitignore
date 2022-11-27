@@ -148,3 +148,6 @@ Data/AWS/*
 # !Data/_Template/*
 
 *.bak
+
+# Scratch folder for testing
+scratch/
