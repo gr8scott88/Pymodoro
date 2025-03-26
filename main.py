@@ -8,7 +8,14 @@ from enum import Enum
 import PIL.Image
 import PIL.ImageTk
 import sys
+import os
+from datetime import datetime
 
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Get the directory containing the script
+
+# logger.debug(f'Current working directory: {script_dir}')
 
 class State(Enum):
     Ready = 0
@@ -17,58 +24,91 @@ class State(Enum):
     LongRest = 3
 
 
-timerdict = {'Ready': 25*60,
+timer_dict = {'Ready': 25*60,
             'Working': 25*60,
              'Rest': 5*60,
              'LongRest': 15*60}
 
 
-# timerdict = {'Ready': 5,
-#              'Working': 5,
-#              'Rest': 3,
-#              'LongRest': 10}
-
-imagedict = {'Ready': 'res/ReadyState.png',
-             'Working1': 'res/Working1State.png',
-             'Rest1': 'res/Rest1State.png',
-             'Working2': 'res/Working2State.png',
-             'Rest2': 'res/Rest2State.png',
-             'Working3': 'res/Working3State.png',
-             'Rest3': 'res/Rest3State.png',
-             'Working4': 'res/Working4State.png',
-             'LongRest1': 'res/Rest4State.png',
+image_dict = {'Ready': os.path.join(script_dir, 'res/ReadyState.png'),
+             'Working1': os.path.join(script_dir, 'res/Working1State.png'),
+             'Rest1': os.path.join(script_dir, 'res/Rest1State.png'),
+             'Working2': os.path.join(script_dir, 'res/Working2State.png'),
+             'Rest2': os.path.join(script_dir, 'res/Rest2State.png'),
+             'Working3': os.path.join(script_dir, 'res/Working3State.png'),
+             'Rest3': os.path.join(script_dir, 'res/Rest3State.png'),
+             'Working4': os.path.join(script_dir, 'res/Working4State.png'),
+             'LongRest1': os.path.join(script_dir, 'res/Rest4State.png'),
              }
 
 
-# globalbg = '#47b9db'  # Light Blue
-globalbg = '#1e81b0'  # Darker Bl]ue
-# buttonbg = '#eab676'  # Tan
-buttonbg = '#abdbe3'  # Light Blue
+# global_bg = '#47b9db'  # Light Blue
+global_bg = '#1e81b0'  # Darker Bl]ue
+# button_bg = '#eab676'  # Tan
+button_bg = '#abdbe3'  # Light Blue
 # tkFont.Font(family="Helvetica",size=36,weight="bold")
-buttonfont = ("Arial", 15, 'bold')
+button_font = ("Arial", 15, 'bold')
 
 
-def configure_logger(loglevel='Debug'):
+def configure_logger(log_level='Debug'):
 
     logger.remove()
-    if loglevel.lower == 'debug':
+    if log_level.lower == 'debug':
         logger.add(sys.stderr, level="DEBUG")
-    if loglevel.lower == 'trace':
+    if log_level.lower == 'trace':
         logger.add(sys.stderr, level="TRACE")
-    if loglevel.lower == 'info':
+    if log_level.lower == 'info':
         logger.add(sys.stderr, level="INFO")
 
 
 class Pymodoro:
     def __init__(self):
-        configure_logger(loglevel='INFO')
+        configure_logger(log_level='INFO')
         self.root = tk.Tk()
+        
+        # Set the Windows taskbar icon if running on Windows
+        if sys.platform == 'win32':
+            try:
+                import ctypes
+                my_app_id = 'pymodoro.timer.1.0' # arbitrary string
+                ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(my_app_id)
+                
+                # Set window icon using the tomato image
+                tomato_icon = os.path.join(script_dir, 'res/tomato.png')
+                if os.path.exists(tomato_icon):
+                    # Set the window icon directly using the image
+                    icon = PIL.Image.open(tomato_icon)
+                    photo = PIL.ImageTk.PhotoImage(icon)
+                    if hasattr(photo, 'width') and hasattr(photo, 'height'):
+                        self.root.iconphoto(True, photo)
+            except Exception as e:
+                logger.error(f"Failed to set Windows taskbar icon: {e}")
+        
         self.timer_active = False
         self.state = State.Ready
-        self.sec_remaining = timerdict[self.state.name]
+        self.sec_remaining = timer_dict[self.state.name]
         self.build_window()
         self.rests = 0
+        self.last_interaction = time.time()
+        self.root.bind('<Key>', self.update_interaction)
+        self.root.bind('<Button>', self.update_interaction)
         self.start()
+
+    def update_interaction(self, event=None):
+        self.last_interaction = time.time()
+
+    def check_inactivity(self):
+        if (self.state == State.Working and 
+            self.timer_active and 
+            time.time() - self.last_interaction > 3600):  # 60 minutes
+            
+            response = messagebox.askyesno("Still there?", 
+                                         "Are you still listening?")
+            if response:
+                self.update_interaction()
+            else:
+                self.reset()
+                self.play_pause_media()  # Stop media playback
 
     def start(self):
         self.continuous_increment()
@@ -79,6 +119,7 @@ class Pymodoro:
             self.decrease()
             if self.time_remaining <= 0:
                 self.transition_state()
+            self.check_inactivity()
 
         self.root.after(1000, self.continuous_increment)
 
@@ -117,88 +158,88 @@ class Pymodoro:
             self.update_state_graphic()
 
     def set_time_remaining(self):
-        self.time_remaining = timerdict[self.state.name]
+        self.time_remaining = timer_dict[self.state.name]
         self.update_timer_label()
 
     def set_state_label(self):
-        self.statelbl['text'] = self.state.name
+        self.state_lbl['text'] = self.state.name
 
     def build_window(self):
         self.root.title("Pymodoro")
         self.root.geometry("700x325")
-        self.root.configure(bg=globalbg)
+        self.root.configure(bg=global_bg)
 
-        self.mainframe = tk.Frame(master=self.root, bg=globalbg)
-        self.mainframe.pack(fill='both', expand=False)
+        self.main_frame = tk.Frame(master=self.root, bg=global_bg)
+        self.main_frame.pack(fill='both', expand=False)
 
-        self.add_state_widget(self.mainframe)
-        self.add_timer_widget(self.mainframe)
-        self.add_pomodoro_widget(self.mainframe)
-        self.add_control_widget(self.mainframe)
+        self.add_state_widget(self.main_frame)
+        self.add_timer_widget(self.main_frame)
+        self.add_pomodoro_widget(self.main_frame)
+        self.add_control_widget(self.main_frame)
 
     def rebuild_window(self):
-        self.stateframe.destroy()
-        self.timerframe.destroy()
-        self.pomodoroframe.destroy()
-        self.controlframe.destroy()
+        self.state_frame.destroy()
+        self.timer_frame.destroy()
+        self.pomodoro_frame.destroy()
+        self.control_frame.destroy()
 
-        self.add_state_widget(self.mainframe)
-        self.add_timer_widget(self.mainframe)
-        self.add_pomodoro_widget(self.mainframe)
-        self.add_control_widget(self.mainframe)
+        self.add_state_widget(self.main_frame)
+        self.add_timer_widget(self.main_frame)
+        self.add_pomodoro_widget(self.main_frame)
+        self.add_control_widget(self.main_frame)
 
     def add_state_widget(self, parent):
-        self.stateframe = tk.Frame(master=parent, height=100, bg=globalbg, relief=tk.RAISED, borderwidth=1)
-        self.stateframe.pack(fill='x', padx=5, pady=5)
-        self.statelbl = tk.Label(master=self.stateframe, text=self.state.name, padx='10', font=("Arial", 40), bg=globalbg)
-        self.statelbl.pack(anchor='center', pady='10')
+        self.state_frame = tk.Frame(master=parent, height=100, bg=global_bg, relief=tk.RAISED, borderwidth=1)
+        self.state_frame.pack(fill='x', padx=5, pady=5)
+        self.state_lbl = tk.Label(master=self.state_frame, text=self.state.name, padx='10', font=("Arial", 40), bg=global_bg)
+        self.state_lbl.pack(anchor='center', pady='10')
 
     def add_timer_widget(self, parent):
-        self.timerframe = tk.Frame(master=parent, height=100, bg=globalbg)
-        self.timerframe.pack(fill='x')
-        self.timerlbl = tk.Label(master=self.timerframe, text="00:00", padx='10', font=("Arial", 25), bg=globalbg)
-        self.timerlbl.pack(anchor='center', pady='10')
+        self.timer_frame = tk.Frame(master=parent, height=100, bg=global_bg)
+        self.timer_frame.pack(fill='x')
+        self.timer_lbl = tk.Label(master=self.timer_frame, text="00:00", padx='10', font=("Arial", 25), bg=global_bg)
+        self.timer_lbl.pack(anchor='center', pady='10')
 
     def add_pomodoro_widget(self, parent):
-        self.pomodoroframe = tk.Frame(master=parent, height=100, bg=globalbg)
-        self.pomodoroframe.pack(fill='x')
+        self.pomodoro_frame = tk.Frame(master=parent, height=100, bg=global_bg)
+        self.pomodoro_frame.pack(fill='x')
 
         if self.state == State.Ready:
-            im = PIL.Image.open(imagedict['Ready'])
+            im = PIL.Image.open(image_dict['Ready'])
         else:
-            dictkey = f'{self.state.name}{str(self.rests + 1)}'
-            im = PIL.Image.open(imagedict[dictkey])
+            dict_key = f'{self.state.name}{str(self.rests + 1)}'
+            im = PIL.Image.open(image_dict[dict_key])
         photo = PIL.ImageTk.PhotoImage(im)
 
-        # canvas = tk.Canvas(master=self.pomodoroframe, width=im.size[0], height=im.size[1])
+        # canvas = tk.Canvas(master=self.pomodoro_frame, width=im.size[0], height=im.size[1])
         # canvas.pack()
         # canvas.create_image(im.size[0], im.size[1], image=photo)
 
-        self.stateimagelbl = tk.Label(master=self.pomodoroframe, image=photo, bg=globalbg)
-        self.stateimagelbl.image = photo  # keep a reference!
-        self.stateimagelbl.pack(anchor='center')
+        self.state_image_lbl = tk.Label(master=self.pomodoro_frame, image=photo, bg=global_bg)
+        self.state_image_lbl.image = photo  # keep a reference!
+        self.state_image_lbl.pack(anchor='center')
 
     def add_control_widget(self, parent):
         if self.state == State.Ready:
-            self.controlframe = tk.Frame(master=parent, height=125, bg=globalbg)
-            self.controlframe.pack(anchor='center', pady='25')
+            self.control_frame = tk.Frame(master=parent, height=125, bg=global_bg)
+            self.control_frame.pack(anchor='center', pady='25')
 
-            self.gobutton = tk.Button(master=self.controlframe, text='Go!', width='15', pady='5', command=self.go, bg=buttonbg, font=buttonfont)
-            self.gobutton.pack(side='left', padx='5')
+            self.go_button = tk.Button(master=self.control_frame, text='Go!', width='15', pady='5', command=self.go, bg=button_bg, font=button_font)
+            self.go_button.pack(side='left', padx='5')
 
         else:
-            self.controlframe = tk.Frame(master=parent, height=125, bg=globalbg)
-            self.controlframe.pack(anchor='center', pady='25')
+            self.control_frame = tk.Frame(master=parent, height=125, bg=global_bg)
+            self.control_frame.pack(anchor='center', pady='25')
 
-            self.startstopbutton = tk.Button(master=self.controlframe, text='Pause', width='15', pady='5',
-                                             command=self.start_stop, bg=buttonbg, font=buttonfont)
-            self.startstopbutton.pack(side='left', padx='5')
+            self.start_stop_button = tk.Button(master=self.control_frame, text='Pause', width='15', pady='5',
+                                             command=self.start_stop, bg=button_bg, font=button_font)
+            self.start_stop_button.pack(side='left', padx='5')
 
-            skipbutton = tk.Button(master=self.controlframe, text='Skip', width='15', pady='5', command=self.skip, bg=buttonbg, font=buttonfont)
-            skipbutton.pack(side='left', padx='5')
+            skip_button = tk.Button(master=self.control_frame, text='Skip', width='15', pady='5', command=self.skip, bg=button_bg, font=button_font)
+            skip_button.pack(side='left', padx='5')
 
-            resetbutton = tk.Button(master=self.controlframe, text='Restart', width='15', pady='5', command=self.reset, bg=buttonbg, font=buttonfont)
-            resetbutton.pack(side='left', padx='5')
+            reset_button = tk.Button(master=self.control_frame, text='Restart', width='15', pady='5', command=self.reset, bg=button_bg, font=button_font)
+            reset_button.pack(side='left', padx='5')
 
     def play_pause_media(self):
         pyautogui.press("playpause")
@@ -220,27 +261,27 @@ class Pymodoro:
         self.timer_active = False
 
     def update_timer_label(self):
-        self.timerlbl['text'] = f'{self.format_time_value()}'
+        self.timer_lbl['text'] = f'{self.format_time_value()}'
 
     def update_state_graphic(self):
 
-        dictkey = f'{self.state.name}{str(self.rests+1)}'
-        im = PIL.Image.open(imagedict[dictkey])
+        dict_key = f'{self.state.name}{str(self.rests+1)}'
+        im = PIL.Image.open(image_dict[dict_key])
 
-        logger.debug(f'Updating state graphic to {imagedict[dictkey]}')
+        logger.debug(f'Updating state graphic to {image_dict[dict_key]}')
         photo = PIL.ImageTk.PhotoImage(im)
-        self.stateimagelbl.configure(image=photo)
-        self.stateimagelbl.image = photo  # keep a reference!
-        # self.stateimagelbl.pack(anchor='center')
+        self.state_image_lbl.configure(image=photo)
+        self.state_image_lbl.image = photo  # keep a reference!
+        # self.state_image_lbl.pack(anchor='center')
 
     def start_stop(self):
         if self.timer_active:
             self.timer_active = False
-            self.startstopbutton['text'] = 'Start'
-            self.statelbl['text'] = f'{self.state.name} - Paused'
+            self.start_stop_button['text'] = 'Start'
+            self.state_lbl['text'] = f'{self.state.name} - Paused'
         else:
             self.timer_active = True
-            self.startstopbutton['text'] = 'Pause'
+            self.start_stop_button['text'] = 'Pause'
             self.set_state_label()
 
     def increase(self):
