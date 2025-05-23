@@ -98,11 +98,13 @@ class Pymodoro:
         self.last_interaction = time.time()
 
     def check_inactivity(self):
-        if (self.state == State.Working and 
-            self.timer_active and 
-            time.time() - self.last_interaction > 3600):  # 60 minutes
-            
-            response = messagebox.askyesno("Still there?", 
+        current_hour = datetime.now().hour
+        if (self.state == State.Working and
+            self.timer_active and
+            time.time() - self.last_interaction > 3600 and
+            (current_hour < 7 or current_hour >= 16)):  # 60 minutes
+
+            response = messagebox.askyesno("Still there?",
                                          "Are you still listening?")
             if response:
                 self.update_interaction()
