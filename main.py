@@ -143,6 +143,7 @@ class Pymodoro:
             self.update_state_graphic()
             self.timer_active = True
         elif self.state == State.Working:
+            logger.debug(f'Current Rest -> {self.rests}')
             if self.rests < 3:
                 logger.debug('Transitioning to Rest...')
                 self.play_sound("lets_take_a_quick_break") # Changed voice prompt
