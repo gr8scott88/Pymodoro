@@ -21,9 +21,9 @@ Pymodoro includes a feature for voice prompts to audibly signal certain events. 
 
 The specific sound events and their corresponding audio file names are:
 
--   **Transition from Work to a short rest**: `work_to_short_rest.mp3`
--   **Transition from Rest (short or long) to Work**: `rest_to_work.mp3`
--   **Transition from Work to a long rest**: `work_to_long_rest.mp3`
+-   **Transition from Work to a short rest**: `lets_take_a_quick_break.mp3`
+-   **Transition from Rest (short or long) to Work**: `lets_get_back_to_work.mp3`
+-   **Transition from Work to a long rest**: `lets_take_a_longer_break.mp3`
 -   **"Are you still listening?" inactivity popup**: `are_you_still_listening.mp3`
 
 Ensure your custom audio files are named exactly as listed above and placed in the `res` folder for the voice prompts to work correctly.
