@@ -27,3 +27,5 @@ The specific sound events and their corresponding audio file names are:
 -   **"Are you still listening?" inactivity popup**: `are_you_still_listening.mp3`
 
 Ensure your custom audio files are named exactly as listed above and placed in the `res` folder for the voice prompts to work correctly.
+
+*(Note: Audio playback is handled by the `pygame.mixer` library, which replaced the previous `playsound` library for improved compatibility and control.)*
