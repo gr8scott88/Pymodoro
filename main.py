@@ -64,9 +64,12 @@ def configure_logger(log_level='Debug'):
 
 class Pymodoro:
     def __init__(self):
-        configure_logger(log_level='INFO')
+        # configure_logger(log_level='INFO')
+        logger.debug('Initializing pygame')
         pygame.mixer.init() # Initialize pygame mixer
+        logger.debug('Pygame initialized')
         self.root = tk.Tk()
+        
         
         # Set the Windows taskbar icon if running on Windows
         if sys.platform == 'win32':
@@ -299,14 +302,14 @@ class Pymodoro:
         self.update_timer_label()
 
     def decrease(self):
-        logger.debug('Decrementing timer...')
+        logger.trace('Decrementing timer...')
         self.time_remaining -= 1
         self.update_timer_label()
 
     def format_time_value(self):
         secconds = self.time_remaining % 60
         mininutes = math.floor(self.time_remaining / 60)
-        logger.debug(f'Timer value: {mininutes:0>2}:{secconds:0>2}')
+        logger.trace(f'Timer value: {mininutes:0>2}:{secconds:0>2}')
         return f'{mininutes:0>2}:{secconds:0>2}'
 
     def play_sound(self, sound_name):
