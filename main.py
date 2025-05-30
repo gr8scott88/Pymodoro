@@ -10,6 +10,7 @@ import PIL.ImageTk
 import sys
 import os
 from datetime import datetime
+from playsound import playsound # Added for voice prompts
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -104,6 +105,7 @@ class Pymodoro:
             time.time() - self.last_interaction > 3600 and
             (current_hour < 7 or current_hour >= 16)):  # 60 minutes
 
+            self.play_sound("are_you_still_listening") # Added voice prompt
             response = messagebox.askyesno("Still there?",
                                          "Are you still listening?")
             if response:
@@ -128,6 +130,8 @@ class Pymodoro:
     def transition_state(self):
         if self.state == State.Ready:
             logger.debug('Transitioning to Working...')
+            # For Ready -> Working, no specific sound in requirements, but play_pause_media might make a sound.
+            # If a "start work" sound is desired, it would go here.
             self.play_pause_media()
             self.state = State.Working
             self.set_time_remaining()
@@ -137,6 +141,7 @@ class Pymodoro:
         elif self.state == State.Working:
             if self.rests < 3:
                 logger.debug('Transitioning to Rest...')
+                self.play_sound("work_to_short_rest") # Added voice prompt
                 self.play_pause_media()
                 self.state = State.Rest
                 self.set_time_remaining()
@@ -145,6 +150,7 @@ class Pymodoro:
                 self.rests += 1
             else:
                 logger.debug('Transitioning to Long Rest...')
+                self.play_sound("work_to_long_rest") # Added voice prompt
                 self.play_pause_media()
                 self.rests = 0
                 self.state = State.LongRest
@@ -153,6 +159,7 @@ class Pymodoro:
                 self.update_state_graphic()
         elif self.state == State.Rest or self.state == State.LongRest:
             logger.debug('Transitioning to Working...')
+            self.play_sound("rest_to_work") # Added voice prompt
             self.play_pause_media()
             self.state = State.Working
             self.set_time_remaining()
@@ -300,6 +307,27 @@ class Pymodoro:
         mininutes = math.floor(self.time_remaining / 60)
         logger.debug(f'Timer value: {mininutes:0>2}:{secconds:0>2}')
         return f'{mininutes:0>2}:{secconds:0>2}'
+
+    def play_sound(self, sound_name):
+        """Plays a sound from the res directory."""
+        try:
+            sound_file_path = os.path.join(script_dir, 'res', f"{sound_name}.mp3")
+            if not os.path.exists(sound_file_path):
+                logger.warning(f"Sound file not found: {sound_file_path}")
+                return
+            
+            # Run playsound in a separate thread to avoid blocking the GUI
+            # This might be overkill if sounds are very short, but good practice.
+            # However, playsound itself can block. The True/False for block is for playsound's own implementation.
+            # For true non-blocking, threading would be needed here.
+            # For now, assume sounds are short and blocking is acceptable or playsound handles it.
+            playsound(sound_file_path, block=False) # block=False to attempt non-blocking
+            logger.debug(f"Playing sound: {sound_file_path}")
+        except FileNotFoundError: # This is somewhat redundant due to the os.path.exists check
+            logger.error(f"Sound file not found (FileNotFoundError): {sound_file_path}")
+        except Exception as e:
+            # Catching general exceptions from playsound, which can vary by platform.
+            logger.error(f"Could not play sound {sound_name}. Error: {e}")
 
 
 if __name__ == '__main__':
