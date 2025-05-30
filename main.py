@@ -145,7 +145,7 @@ class Pymodoro:
         elif self.state == State.Working:
             if self.rests < 3:
                 logger.debug('Transitioning to Rest...')
-                self.play_sound("work_to_short_rest") # Added voice prompt
+                self.play_sound("lets_take_a_quick_break") # Changed voice prompt
                 self.play_pause_media()
                 self.state = State.Rest
                 self.set_time_remaining()
@@ -154,7 +154,7 @@ class Pymodoro:
                 self.rests += 1
             else:
                 logger.debug('Transitioning to Long Rest...')
-                self.play_sound("work_to_long_rest") # Added voice prompt
+                self.play_sound("lets_take_a_longer_break") # Changed voice prompt
                 self.play_pause_media()
                 self.rests = 0
                 self.state = State.LongRest
@@ -163,7 +163,7 @@ class Pymodoro:
                 self.update_state_graphic()
         elif self.state == State.Rest or self.state == State.LongRest:
             logger.debug('Transitioning to Working...')
-            self.play_sound("rest_to_work") # Added voice prompt
+            self.play_sound("lets_get_back_to_work") # Changed voice prompt
             self.play_pause_media()
             self.state = State.Working
             self.set_time_remaining()

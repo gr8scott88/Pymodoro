@@ -244,16 +244,16 @@ class TestStateTransitions(unittest.TestCase):
             self.assertEqual(self.pymodoro.rests, expected_final_rests)
 
     def test_transition_working_to_short_rest(self):
-        self.helper_test_sound_on_transition(State.Working, 0, "work_to_short_rest", State.Rest, 1)
+        self.helper_test_sound_on_transition(State.Working, 0, "lets_take_a_quick_break", State.Rest, 1)
 
     def test_transition_working_to_long_rest(self):
-        self.helper_test_sound_on_transition(State.Working, 3, "work_to_long_rest", State.LongRest, 0)
+        self.helper_test_sound_on_transition(State.Working, 3, "lets_take_a_longer_break", State.LongRest, 0)
 
     def test_transition_rest_to_working(self):
-        self.helper_test_sound_on_transition(State.Rest, None, "rest_to_work", State.Working)
+        self.helper_test_sound_on_transition(State.Rest, None, "lets_get_back_to_work", State.Working)
 
     def test_transition_long_rest_to_working(self):
-        self.helper_test_sound_on_transition(State.LongRest, None, "rest_to_work", State.Working)
+        self.helper_test_sound_on_transition(State.LongRest, None, "lets_get_back_to_work", State.Working)
 
 if __name__ == '__main__':
     unittest.main()
