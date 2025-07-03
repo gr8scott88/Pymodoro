@@ -3,24 +3,73 @@ from PIL import Image, ImageDraw, ImageTk, ImageFont
 import os # For font path if needed
 
 # Define a global default font path or a way to find fonts if needed.
-# This might need adjustment based on where fonts are located on the system
-# or if a specific font file is bundled with the application.
-try:
-    # Common path for Arial on Windows
-    DEFAULT_FONT_PATH = "arial.ttf"
-    ImageFont.truetype(DEFAULT_FONT_PATH, 10) # Test load
-except IOError:
-    # Fallback for other systems or if Arial is not in the default path
-    # On Linux, fc-match Arial might give a path, or use a common sans-serif
-    # For simplicity, if Arial isn't found directly, Pillow might find it
-    # or use a default. For more robustness, one might bundle a .ttf file.
-    try:
-        DEFAULT_FONT_PATH = "DejaVuSans.ttf" # Common on Linux
-        ImageFont.truetype(DEFAULT_FONT_PATH, 10)
-    except IOError:
-        DEFAULT_FONT_PATH = None # Pillow will use a default font
-        print("Warning: Arial or DejaVuSans font not found. Using Pillow's default font.")
 
+def get_font_path(font_name, font_weight="normal"):
+    """
+    Tries to find a font file path.
+    This is a basic implementation. For robust cross-platform font finding,
+    a library like `matplotlib.font_manager` could be used, or bundle fonts.
+    """
+    font_name_lower = font_name.lower()
+    system_fonts = {
+        "windows": {
+            "arial": {
+                "normal": "arial.ttf",
+                "bold": "arialbd.ttf"
+            },
+            "tahoma": { # Tahoma is good for UI and Unicode
+                "normal": "tahoma.ttf",
+                "bold": "tahomabd.ttf"
+            }
+        },
+        "linux": { # Common on Linux systems with fontconfig
+            "dejavusans": {
+                "normal": "DejaVuSans.ttf",
+                "bold": "DejaVuSans-Bold.ttf"
+            },
+            "arial" : { # Often symlinked or available
+                 "normal": "arial.ttf",
+                 "bold": "arialbd.ttf"
+            }
+        },
+        "darwin": { # macOS
+            "arial": {
+                "normal": "Arial.ttf", # Case sensitive on macOS sometimes
+                "bold": "Arial Bold.ttf"
+            },
+            "helveticaneue": {
+                "normal": "HelveticaNeue.ttc", # .ttc can contain multiple fonts
+                "bold": "HelveticaNeue-Bold.ttc" # Or specific variant
+            }
+        }
+    }
+
+    import sys
+    platform = sys.platform
+    if platform.startswith("win"):
+        os_fonts = system_fonts["windows"]
+    elif platform.startswith("linux"):
+        os_fonts = system_fonts["linux"]
+    elif platform.startswith("darwin"):
+        os_fonts = system_fonts["darwin"]
+    else:
+        os_fonts = {} # Unknown OS
+
+    font_family = os_fonts.get(font_name_lower)
+    if font_family:
+        return font_family.get(font_weight, font_family.get("normal"))
+
+    # Fallback to just the name if not in our simple map
+    if font_weight == "bold":
+        if font_name_lower.endswith(".ttf"):
+            return font_name.replace(".ttf", "bd.ttf") # Simple guess
+        return font_name # Or let Pillow try to find "FontName Bold"
+    return font_name
+
+
+DEFAULT_FONT_NAME = "Arial" # Preferred
+FALLBACK_FONT_NAME = "DejaVuSans" # Good Unicode coverage, common on Linux
+GENERIC_FALLBACK_FONT_NAME = "Tahoma" # Good Unicode coverage, common on Windows
 
 def create_rounded_rectangle_image(width, height, corner_radius, color):
     """
@@ -68,50 +117,65 @@ def create_rounded_button_image(text, width, height, corner_radius,
     draw = ImageDraw.Draw(button_shape)
 
     # 3. Load font
-    actual_font_name = font_name if font_name else DEFAULT_FONT_PATH
-    try:
-        if font_weight == "bold":
-            # For bold, some fonts have a specific bold variant (e.g., "arialbd.ttf")
-            # Or Pillow can try to emulate bold if the font supports it.
-            # Trying a common convention for bold fonts.
-            try:
-                bold_font_name = actual_font_name.replace(".ttf", "bd.ttf") if actual_font_name else None
-                if bold_font_name and os.path.exists(bold_font_name):
-                     font = ImageFont.truetype(bold_font_name, font_size)
-                elif actual_font_name: # Try with "Bold" appended for some font naming schemes
-                    font = ImageFont.truetype(actual_font_name.replace(".ttf"," BOLD.ttf"), font_size) # common way to specify bold font
-                else: # fallback to pillow's default bold if possible
-                     font = ImageFont.truetype(actual_font_name, font_size, encoding='unic', layout_engine=ImageFont.LAYOUT_RAQM)
-            except IOError: # Fallback to regular with simulated bold if possible or just regular
-                font = ImageFont.truetype(actual_font_name, font_size)
-        else:
-            font = ImageFont.truetype(actual_font_name, font_size)
-    except IOError:
-        print(f"Warning: Font '{actual_font_name}' not found. Using Pillow's default font.")
-        font = ImageFont.load_default()
-    except Exception as e:
-        print(f"Error loading font: {e}. Using Pillow's default font.")
-        font = ImageFont.load_default()
+    font_to_try = font_name if font_name else DEFAULT_FONT_NAME
 
+    font_path = get_font_path(font_to_try, font_weight)
+
+    try:
+        font = ImageFont.truetype(font_path, font_size, layout_engine=ImageFont.LAYOUT_RAQM)
+        # Test if the gear symbol can be rendered if it's the text
+        if text == '⚙':
+            if not font.getmask(text).getbbox(): # Returns None if char is not in font
+                 raise IOError("Font does not support '⚙' character.")
+    except IOError:
+        # Try Tahoma as a known good Unicode font on Windows, or DejaVuSans on Linux
+        # print(f"Warning: Font '{font_path}' not found or unsuitable. Trying fallbacks.")
+        fallback_path = get_font_path(GENERIC_FALLBACK_FONT_NAME, font_weight)
+        try:
+            font = ImageFont.truetype(fallback_path, font_size, layout_engine=ImageFont.LAYOUT_RAQM)
+            if text == '⚙' and not font.getmask(text).getbbox():
+                raise IOError(f"Fallback font {GENERIC_FALLBACK_FONT_NAME} also does not support '⚙'.")
+        except IOError:
+            fallback_path_2 = get_font_path(FALLBACK_FONT_NAME, font_weight)
+            try:
+                font = ImageFont.truetype(fallback_path_2, font_size, layout_engine=ImageFont.LAYOUT_RAQM)
+                if text == '⚙' and not font.getmask(text).getbbox():
+                    raise IOError(f"Fallback font {FALLBACK_FONT_NAME} also does not support '⚙'.")
+            except IOError:
+                print(f"Warning: Fallback fonts also not found or unsuitable. Using Pillow's default font for '{text}'.")
+                font = ImageFont.load_default() # This might cause the UnicodeEncodeError for '⚙'
 
     # 4. Calculate text position for centering
-    # Use textbbox for more accurate positioning with Pillow 9.2.0+
-    if hasattr(draw, 'textbbox'):
-        text_bbox = draw.textbbox((0, 0), text, font=font)
-        text_width = text_bbox[2] - text_bbox[0]
-        text_height = text_bbox[3] - text_bbox[1]
-        text_x = (width - text_width) / 2
-        text_y = (height - text_height) / 2 - text_bbox[1] # Adjust for the bbox's y offset
-    else: # Fallback for older Pillow versions
-        text_size = draw.textsize(text, font=font)
-        text_width = text_size[0]
-        text_height = text_size[1]
+    # Use textbbox for more accurate positioning
+    try:
+        # Anchor 'ms' (middle baseline) for vertical, then adjust x for horizontal.
+        # For draw.text, (x,y) is the top-left corner of the text bounding box by default.
+        # Using textlength for width and textbbox for height and precise centering.
+
+        text_left, text_top, text_right, text_bottom = font.getbbox(text)
+        text_actual_width = text_right - text_left
+        text_actual_height = text_bottom - text_top # Height of the drawing area for the glyph
+
+        # For horizontal centering:
+        text_x = (width - text_actual_width) / 2 - text_left
+
+        # For vertical centering:
+        # text_y = (height - text_actual_height) / 2 - text_top
+        # A common heuristic for vertical centering that often looks better:
+        text_y = (height - (font.getmetrics()[0] + font.getmetrics()[1])) / 2 + (font.getmetrics()[1] * 0.5) # Heuristic for better perceived vertical center
+        # Or, more simply using the bbox:
+        text_y = (height / 2) - ((text_top + text_bottom) / 2)
+
+
+    except AttributeError: # Fallback if getbbox or other methods are not available (older Pillow?)
+        # This path should ideally not be taken with modern Pillow.
+        text_width, text_height = draw.textsize(text, font=font) # Deprecated
         text_x = (width - text_width) / 2
         text_y = (height - text_height) / 2
 
-
     # 5. Draw text onto the button shape
-    draw.text((text_x, text_y), text, font=font, fill=text_color)
+    # Ensure text color is in a format PIL understands (e.g. #RRGGBB)
+    draw.text((text_x, text_y), text, font=font, fill=text_color) # Removed anchor, using calculated x,y
 
     # 6. Convert PIL Image to PhotoImage for Tkinter
     photo_image = ImageTk.PhotoImage(button_shape)
