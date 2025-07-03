@@ -221,8 +221,16 @@ class Pymodoro:
         self.state_frame = tk.Frame(master=parent, height=100, bg=global_bg, relief=tk.RAISED, borderwidth=1)
         self.state_frame.pack(fill='x', padx=5, pady=5)
 
+        # Configure grid columns for state_frame
+        # Column 0 will be a flexible spacer on the left
+        # Column 1 will hold the centered state_lbl
+        # Column 2 will be a flexible spacer on the right, also holding the options_button
+        self.state_frame.grid_columnconfigure(0, weight=1)
+        self.state_frame.grid_columnconfigure(1, weight=0) # Label column, don't expand excessively
+        self.state_frame.grid_columnconfigure(2, weight=1)
+
         self.state_lbl = tk.Label(master=self.state_frame, text=self.state.name, padx='10', font=("Arial", 40), bg=global_bg)
-        self.state_lbl.pack(side='left', anchor='w', pady='10', padx='10') # Pack to the left
+        self.state_lbl.grid(row=0, column=1, sticky='ew', pady=10) # Place in center column, sticky='ew' for horizontal centering if cell expands
 
     def add_timer_widget(self, parent):
         self.timer_frame = tk.Frame(master=parent, height=100, bg=global_bg)
@@ -277,7 +285,8 @@ class Pymodoro:
         # If self.options_frame was used for other things, those would need reconsideration.
         # For now, assuming it was only for the button's layout.
         self.options_button = tk.Button(master=parent_frame, text='⚙', width='3', pady='0', command=self.open_options_menu, bg=button_bg, font=("Arial", 15, 'bold')) # Adjusted width and font for better fit
-        self.options_button.pack(side='right', padx=10, pady=10) # pady added for vertical alignment with state_lbl
+        # self.options_button.pack(side='right', padx=10, pady=10) # Old pack
+        self.options_button.grid(row=0, column=2, sticky='e', padx=10, pady=10) # Place in rightmost column, sticky='e' for right alignment
 
     def open_options_menu(self):
         options_window = tk.Toplevel(self.root)
