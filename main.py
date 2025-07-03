@@ -195,42 +195,49 @@ class Pymodoro:
         self.add_control_widget(self.main_frame)
         # Options widget is now integrated into the state_widget's frame or called to add to it.
         # The actual options button will be added to self.state_frame by add_options_widget
-        self.add_options_widget(self.state_frame) # Pass state_frame as parent
+        # self.add_options_widget(self.state_frame) # Old call
+
+        # New structure: top_bar_frame for options, then state_frame
+        self.top_bar_frame = tk.Frame(master=self.main_frame, bg=global_bg)
+        self.top_bar_frame.pack(side=tk.TOP, fill='x', padx=0, pady=0) # No padding for the bar itself initially
+
+        self.add_options_widget(self.top_bar_frame) # Options gear goes into top_bar_frame
+        self.add_state_widget(self.main_frame)      # State label frame below top_bar_frame
+        # add_timer_widget, add_pomodoro_widget, add_control_widget remain as they are, packed after state_frame implicitly
 
     def rebuild_window(self):
-        # self.options_frame might not exist anymore or be managed differently.
-        # If options button is part of state_frame, destroying state_frame is enough.
-        if hasattr(self, 'options_frame') and self.options_frame.winfo_exists():
-            self.options_frame.destroy()
-        self.state_frame.destroy()
-        self.timer_frame.destroy()
-        self.pomodoro_frame.destroy()
-        self.control_frame.destroy()
+        # Destroy frames in reverse order of creation or as convenient
+        if hasattr(self, 'control_frame') and self.control_frame.winfo_exists():
+            self.control_frame.destroy()
+        if hasattr(self, 'pomodoro_frame') and self.pomodoro_frame.winfo_exists():
+            self.pomodoro_frame.destroy()
+        if hasattr(self, 'timer_frame') and self.timer_frame.winfo_exists():
+            self.timer_frame.destroy()
+        if hasattr(self, 'state_frame') and self.state_frame.winfo_exists(): # state_frame is below top_bar_frame
+            self.state_frame.destroy()
+        if hasattr(self, 'top_bar_frame') and self.top_bar_frame.winfo_exists(): # top_bar_frame is at the very top
+            self.top_bar_frame.destroy()
 
+        # Re-create the UI structure
+        self.top_bar_frame = tk.Frame(master=self.main_frame, bg=global_bg)
+        self.top_bar_frame.pack(side=tk.TOP, fill='x', padx=0, pady=0)
 
-        self.add_state_widget(self.main_frame)
-        # Options button is now added within add_state_widget or by add_options_widget using state_frame
-        self.add_options_widget(self.state_frame) # Pass state_frame as parent
+        self.add_options_widget(self.top_bar_frame)
+        self.add_state_widget(self.main_frame) # This will create and pack state_frame below top_bar_frame
         self.add_timer_widget(self.main_frame)
         self.add_pomodoro_widget(self.main_frame)
         self.add_control_widget(self.main_frame)
-        # self.add_options_widget(self.main_frame) # Original call, now handled above or within state_widget
 
-    def add_state_widget(self, parent):
-        # This frame will now hold both the state label and the options button
-        self.state_frame = tk.Frame(master=parent, height=100, bg=global_bg, relief=tk.RAISED, borderwidth=1)
-        self.state_frame.pack(fill='x', padx=5, pady=5)
 
-        # Configure grid columns for state_frame
-        # Column 0 will be a flexible spacer on the left
-        # Column 1 will hold the centered state_lbl
-        # Column 2 will be a flexible spacer on the right, also holding the options_button
-        self.state_frame.grid_columnconfigure(0, weight=1)
-        self.state_frame.grid_columnconfigure(1, weight=0) # Label column, don't expand excessively
-        self.state_frame.grid_columnconfigure(2, weight=1)
+    def add_state_widget(self, parent_main_frame):
+        # This frame is now dedicated to the state label and will be packed below the top_bar_frame.
+        # parent_main_frame is self.main_frame
+        self.state_frame = tk.Frame(master=parent_main_frame, height=100, bg=global_bg, relief=tk.RAISED, borderwidth=1)
+        self.state_frame.pack(side=tk.TOP, fill='x', padx=5, pady=5) # Packed after top_bar_frame by order of calls
 
+        # State label is simply packed centered in this frame.
         self.state_lbl = tk.Label(master=self.state_frame, text=self.state.name, padx='10', font=("Arial", 40), bg=global_bg)
-        self.state_lbl.grid(row=0, column=1, sticky='ew', pady=10) # Place in center column, sticky='ew' for horizontal centering if cell expands
+        self.state_lbl.pack(anchor='center', pady=10, expand=True, fill='x')
 
     def add_timer_widget(self, parent):
         self.timer_frame = tk.Frame(master=parent, height=100, bg=global_bg)
@@ -283,10 +290,23 @@ class Pymodoro:
         # parent_frame is now expected to be self.state_frame
         # The options_frame is no longer created here as a separate entity for the button.
         # If self.options_frame was used for other things, those would need reconsideration.
-        # For now, assuming it was only for the button's layout.
-        self.options_button = tk.Button(master=parent_frame, text='⚙', width='3', pady='0', command=self.open_options_menu, bg=button_bg, font=("Arial", 15, 'bold')) # Adjusted width and font for better fit
-        # self.options_button.pack(side='right', padx=10, pady=10) # Old pack
-        self.options_button.grid(row=0, column=2, sticky='e', padx=10, pady=10) # Place in rightmost column, sticky='e' for right alignment
+        # parent_frame is now expected to be self.top_bar_frame
+
+        # Create a small frame specifically for the gear icon to control its packing
+        gear_frame = tk.Frame(master=parent_frame, bg=global_bg)
+        # Pack gear_frame to the left of the top_bar_frame
+        gear_frame.pack(side=tk.LEFT, padx=5, pady=2) # Small pady for the gear's own bar
+
+        self.options_button = tk.Button(
+            master=gear_frame,
+            text='⚙',
+            width='3',
+            pady='0',
+            command=self.open_options_menu,
+            bg=button_bg,
+            font=("Arial", 15, 'bold')
+        )
+        self.options_button.pack(anchor='center') # Center button within its small gear_frame
 
     def open_options_menu(self):
         options_window = tk.Toplevel(self.root)
