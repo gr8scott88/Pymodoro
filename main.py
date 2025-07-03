@@ -325,17 +325,21 @@ class Pymodoro:
         options_window.transient(self.root) # Set to be transient to the main window
         options_window.grab_set() # Grab focus
 
+        # Define a slightly larger font for the checkbutton for better visibility of the box
+        checkbutton_font = ("Arial", 18, "bold") # Increased from 15 to 18
+
         voice_checkbutton = tk.Checkbutton(
             options_window,
             text="Voice Active",
             variable=self.voice_active_var,
             command=self.save_options, # Save options when checkbutton state changes
-            bg=global_bg,
-            font=button_font, # Using button_font, can be changed if a different style is preferred
-            selectcolor=button_bg, # To make the check mark background more visible if needed
-            activebackground=global_bg,
-            activeforeground='white', # fg when mouse is over
-            fg='white' # text color
+            bg=global_bg, # Background of the widget area
+            font=checkbutton_font, # Use the new larger font
+            selectcolor='#005A9C', # Darker blue for the checkbox background when selected (good for white checkmark)
+            activebackground=global_bg, # Background when mouse is over (text area)
+            activeforeground='white', # Text color when mouse is over
+            fg='white', # Text color
+            pady=5 # Add some vertical padding to make the widget feel a bit larger
         )
         voice_checkbutton.pack(pady=20, padx=20, anchor='w')
 
