@@ -275,9 +275,9 @@ class Pymodoro:
         self.control_frame.pack(anchor='center', pady='25')
 
         # Define standard dimensions and style for control buttons
-        btn_width_px = 120  # Adjusted pixel width
-        btn_height_px = 40  # Adjusted pixel height
-        corner_radius_px = 5
+        btn_width_px = 138  # Increased by 15% from 120
+        btn_height_px = 46  # Increased by 15% from 40
+        corner_radius_px = 5 # Keeping radius, could also scale if desired
         font_name_str, font_size_int, font_weight_str = button_font
         text_color_str = '#000000' # Black text for light blue button
 
@@ -328,8 +328,8 @@ class Pymodoro:
             self.reset_button.pack(side='left', padx='5')
 
     def add_options_widget(self, state_frame_as_master):
-        options_btn_size_px = 30 # Smaller button for icon
-        options_font_size = 15
+        options_btn_size_px = 35 # Increased by 15% from 30 (34.5 -> 35)
+        options_font_size = 15 # Keeping font size for '⚙', adjust if it looks too small
         corner_radius_px = 5
         font_name_str, _, font_weight_str = button_font # Use bold from global button_font
         text_color_str = '#000000'
@@ -427,8 +427,8 @@ class Pymodoro:
         options_window.focus_force()
 
         # Example: Close button for the options window
-        btn_width_px = 100
-        btn_height_px = 35
+        btn_width_px = 115  # Increased by 15% from 100
+        btn_height_px = 40  # Increased by 15% from 35 (40.25 -> 40)
         corner_radius_px = 5
         font_name_str, font_size_int, font_weight_str = button_font
         text_color_str = '#000000'
@@ -579,8 +579,8 @@ class Pymodoro:
         # A better approach would be to have start/pause images pre-created or a function to update it.
 
         # Quick fix: Re-create the button image with new text
-        btn_width_px = 120
-        btn_height_px = 40
+        btn_width_px = 138 # Increased by 15% from 120
+        btn_height_px = 46 # Increased by 15% from 40
         corner_radius_px = 5
         font_name_str, font_size_int, font_weight_str = button_font
         text_color_str = '#000000'
