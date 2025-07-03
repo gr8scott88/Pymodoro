@@ -325,23 +325,35 @@ class Pymodoro:
         options_window.transient(self.root) # Set to be transient to the main window
         options_window.grab_set() # Grab focus
 
-        # Define a slightly larger font for the checkbutton for better visibility of the box
-        checkbutton_font = ("Arial", 18, "bold") # Increased from 15 to 18
+        # Import the ToggleSwitch class
+        from toggle_switch import ToggleSwitch
 
-        voice_checkbutton = tk.Checkbutton(
-            options_window,
-            text="Voice Active",
-            variable=self.voice_active_var,
-            command=self.save_options, # Save options when checkbutton state changes
-            bg=global_bg, # Background of the widget area
-            font=checkbutton_font, # Use the new larger font
-            selectcolor='#005A9C', # Darker blue for the checkbox background when selected (good for white checkmark)
-            activebackground=global_bg, # Background when mouse is over (text area)
-            activeforeground='white', # Text color when mouse is over
-            fg='white', # Text color
-            pady=5 # Add some vertical padding to make the widget feel a bit larger
+        # Define a font for the label next to the toggle switch
+        toggle_label_font = ("Arial", 16) # Slightly smaller than the old checkbutton font for balance
+
+        # Create a frame to hold the label and the toggle switch for better alignment
+        voice_option_frame = tk.Frame(options_window, bg=global_bg)
+        voice_option_frame.pack(pady=20, padx=20, fill='x')
+
+        voice_label = tk.Label(
+            voice_option_frame,
+            text="Voice Active:",
+            bg=global_bg,
+            font=toggle_label_font,
+            fg='white'
         )
-        voice_checkbutton.pack(pady=20, padx=20, anchor='w')
+        voice_label.pack(side=tk.LEFT, padx=(0, 10)) # Add some padding to the right of the label
+
+        # Instantiate the ToggleSwitch
+        # Dimensions can be adjusted as needed, e.g., width=50, height=25
+        voice_toggle = ToggleSwitch(
+            voice_option_frame,
+            variable=self.voice_active_var,
+            command=self.save_options,
+            width=44,  # Designed width
+            height=22  # Designed height
+        )
+        voice_toggle.pack(side=tk.LEFT)
 
         # Make sure the window is brought to the front and focused
         options_window.lift()
