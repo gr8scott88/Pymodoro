@@ -275,10 +275,10 @@ class Pymodoro:
         self.control_frame.pack(anchor='center', pady='25')
 
         # Define standard dimensions and style for control buttons
-        btn_width_px = 138  # Increased by 15% from 120
-        btn_height_px = 46  # Increased by 15% from 40
+        btn_width_px = 207  # Increased by another 50% from 138
+        btn_height_px = 69  # Increased by another 50% from 46
         corner_radius_px = 5 # Keeping radius, could also scale if desired
-        font_name_str, font_size_int, font_weight_str = button_font
+        font_name_str, font_size_int, font_weight_str = button_font # Font size might need adjustment later
         text_color_str = '#000000' # Black text for light blue button
 
         if self.state == State.Ready:
@@ -328,8 +328,8 @@ class Pymodoro:
             self.reset_button.pack(side='left', padx='5')
 
     def add_options_widget(self, state_frame_as_master):
-        options_btn_size_px = 35 # Increased by 15% from 30 (34.5 -> 35)
-        options_font_size = 15 # Keeping font size for '⚙', adjust if it looks too small
+        options_btn_size_px = 53 # Increased by 50% from 35 (52.5 -> 53)
+        options_font_size = 25   # Increased from 15 to better fit larger button
         corner_radius_px = 5
         font_name_str, _, font_weight_str = button_font # Use bold from global button_font
         text_color_str = '#000000'
@@ -427,10 +427,10 @@ class Pymodoro:
         options_window.focus_force()
 
         # Example: Close button for the options window
-        btn_width_px = 115  # Increased by 15% from 100
-        btn_height_px = 40  # Increased by 15% from 35 (40.25 -> 40)
+        btn_width_px = 173  # Increased by 50% from 115 (172.5 -> 173)
+        btn_height_px = 60  # Increased by 50% from 40
         corner_radius_px = 5
-        font_name_str, font_size_int, font_weight_str = button_font
+        font_name_str, font_size_int, font_weight_str = button_font # Font size might need adjustment
         text_color_str = '#000000'
 
         self.options_close_button_img = create_rounded_button_image(
@@ -579,10 +579,10 @@ class Pymodoro:
         # A better approach would be to have start/pause images pre-created or a function to update it.
 
         # Quick fix: Re-create the button image with new text
-        btn_width_px = 138 # Increased by 15% from 120
-        btn_height_px = 46 # Increased by 15% from 40
+        btn_width_px = 207 # Increased by another 50% from 138
+        btn_height_px = 69 # Increased by another 50% from 46
         corner_radius_px = 5
-        font_name_str, font_size_int, font_weight_str = button_font
+        font_name_str, font_size_int, font_weight_str = button_font # Font size might need adjustment
         text_color_str = '#000000'
         current_text = 'Start' if not self.timer_active else 'Pause'
 
