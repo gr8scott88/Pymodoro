@@ -11,8 +11,10 @@ import sys
 import os
 from datetime import datetime
 import pygame # Added for pygame mixer
+import json # Added for options persistence
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
+OPTIONS_FILE = os.path.join(script_dir, 'options.json')
 
 # Get the directory containing the script
 
@@ -69,7 +71,8 @@ class Pymodoro:
         pygame.mixer.init() # Initialize pygame mixer
         logger.debug('Pygame initialized')
         self.root = tk.Tk()
-        
+        self.voice_active_var = tk.BooleanVar(value=True) # For the voice active checkbutton
+        self.load_options() # Load options before building window
         
         # Set the Windows taskbar icon if running on Windows
         if sys.platform == 'win32':
@@ -190,6 +193,7 @@ class Pymodoro:
         self.add_timer_widget(self.main_frame)
         self.add_pomodoro_widget(self.main_frame)
         self.add_control_widget(self.main_frame)
+        self.add_options_widget(self.main_frame)
 
     def rebuild_window(self):
         self.state_frame.destroy()
@@ -201,6 +205,7 @@ class Pymodoro:
         self.add_timer_widget(self.main_frame)
         self.add_pomodoro_widget(self.main_frame)
         self.add_control_widget(self.main_frame)
+        self.add_options_widget(self.main_frame)
 
     def add_state_widget(self, parent):
         self.state_frame = tk.Frame(master=parent, height=100, bg=global_bg, relief=tk.RAISED, borderwidth=1)
@@ -254,6 +259,93 @@ class Pymodoro:
 
             reset_button = tk.Button(master=self.control_frame, text='Restart', width='15', pady='5', command=self.reset, bg=button_bg, font=button_font)
             reset_button.pack(side='left', padx='5')
+
+    def add_options_widget(self, parent):
+        self.options_frame = tk.Frame(master=parent, bg=global_bg)
+        self.options_frame.pack(fill='x', side='bottom', pady=5)
+        self.options_button = tk.Button(master=self.options_frame, text='⚙', width='5', pady='0', command=self.open_options_menu, bg=button_bg, font=button_font)
+        self.options_button.pack(side='right', padx=10)
+
+    def open_options_menu(self):
+        options_window = tk.Toplevel(self.root)
+        options_window.title("Options")
+        options_window.geometry("300x200")
+        options_window.configure(bg=global_bg)
+
+        # Prevent multiple option windows
+        options_window.transient(self.root) # Set to be transient to the main window
+        options_window.grab_set() # Grab focus
+
+        voice_checkbutton = tk.Checkbutton(
+            options_window,
+            text="Voice Active",
+            variable=self.voice_active_var,
+            command=self.save_options, # Save options when checkbutton state changes
+            bg=global_bg,
+            font=button_font, # Using button_font, can be changed if a different style is preferred
+            selectcolor=button_bg, # To make the check mark background more visible if needed
+            activebackground=global_bg,
+            activeforeground='white', # fg when mouse is over
+            fg='white' # text color
+        )
+        voice_checkbutton.pack(pady=20, padx=20, anchor='w')
+
+        # Make sure the window is brought to the front and focused
+        options_window.lift()
+        options_window.focus_force()
+
+        # Example: Close button for the options window
+        close_button = tk.Button(
+            options_window,
+            text="Close",
+            command=options_window.destroy,
+            bg=button_bg,
+            font=button_font
+        )
+        close_button.pack(pady=10)
+
+    def load_options(self):
+        should_save_defaults = False
+        try:
+            with open(OPTIONS_FILE, 'r') as f:
+                options = json.load(f)
+                if "voice_active" in options:
+                    self.voice_active_var.set(options["voice_active"])
+                    logger.info(f"Loaded 'voice_active': {options['voice_active']} from {OPTIONS_FILE}")
+                else:
+                    logger.info(f"'voice_active' key missing in {OPTIONS_FILE}. Using default True.")
+                    self.voice_active_var.set(True)
+                    should_save_defaults = True # Mark to save the file with the new default key
+        except FileNotFoundError:
+            logger.info(f"{OPTIONS_FILE} not found. Creating with default settings.")
+            self.voice_active_var.set(True)
+            should_save_defaults = True
+        except json.JSONDecodeError:
+            logger.warning(f"Error decoding JSON from {OPTIONS_FILE}. Using default settings and overwriting.")
+            self.voice_active_var.set(True)
+            should_save_defaults = True
+        except Exception as e: # Catch any other unexpected error during loading
+            logger.error(f"Unexpected error loading options: {e}. Using default settings.")
+            self.voice_active_var.set(True)
+            should_save_defaults = True
+
+        if should_save_defaults:
+            self.save_options()
+
+
+    def save_options(self):
+        options_to_save = {
+            "voice_active": self.voice_active_var.get()
+        }
+        try:
+            with open(OPTIONS_FILE, 'w') as f:
+                json.dump(options_to_save, f, indent=4)
+            logger.info(f"Saved options to {OPTIONS_FILE}")
+        except IOError as e:
+            logger.error(f"Error saving options to {OPTIONS_FILE}: {e}")
+        except Exception as e:
+            logger.error(f"Unexpected error saving options: {e}")
+
 
     def play_pause_media(self):
         pyautogui.press("playpause")
@@ -315,6 +407,9 @@ class Pymodoro:
 
     def play_sound(self, sound_name):
         """Plays a sound from the res directory using pygame.mixer."""
+        if not self.voice_active_var.get():
+            logger.debug("Voice Active is False, skipping sound.")
+            return
         try:
             path = os.path.join(script_dir, 'res', f"{sound_name}.mp3")
             if not os.path.exists(path):
