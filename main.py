@@ -291,8 +291,35 @@ class Pymodoro:
     def open_options_menu(self):
         options_window = tk.Toplevel(self.root)
         options_window.title("Options")
-        options_window.geometry("300x200")
+        # options_window.geometry("300x200") # Initial size, position will be set below
         options_window.configure(bg=global_bg)
+
+        # Calculate position relative to the main window
+        self.root.update_idletasks() # Ensure main window geometry is up to date
+        main_x = self.root.winfo_x()
+        main_y = self.root.winfo_y()
+        main_width = self.root.winfo_width()
+        main_height = self.root.winfo_height()
+
+        popup_width = 300
+        popup_height = 200
+
+        # Center the popup window relative to the main window
+        popup_x = main_x + (main_width // 2) - (popup_width // 2)
+        popup_y = main_y + (main_height // 2) - (popup_height // 2)
+
+        # Ensure popup is not placed off-screen (simple check for top-left)
+        # More sophisticated checks might be needed for all edges or multi-monitor.
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+
+        if popup_x < 0: popup_x = 0
+        if popup_y < 0: popup_y = 0
+        if popup_x + popup_width > screen_width: popup_x = screen_width - popup_width
+        if popup_y + popup_height > screen_height: popup_y = screen_height - popup_height
+
+
+        options_window.geometry(f"{popup_width}x{popup_height}+{int(popup_x)}+{int(popup_y)}")
 
         # Prevent multiple option windows
         options_window.transient(self.root) # Set to be transient to the main window
