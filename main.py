@@ -293,26 +293,69 @@ class Pymodoro:
     def open_options_menu(self):
         options_window = tk.Toplevel(self.root)
         options_window.title("Options")
-        options_window.geometry("300x200")
+        # options_window.geometry("300x200") # Initial size, position will be set below
         options_window.configure(bg=global_bg)
+
+        # Calculate position relative to the main window
+        self.root.update_idletasks() # Ensure main window geometry is up to date
+        main_x = self.root.winfo_x()
+        main_y = self.root.winfo_y()
+        main_width = self.root.winfo_width()
+        main_height = self.root.winfo_height()
+
+        popup_width = 300
+        popup_height = 200 # Default height, can be adjusted by content later if needed
+
+        # Center the popup window relative to the main window
+        popup_x = main_x + (main_width // 2) - (popup_width // 2)
+        popup_y = main_y + (main_height // 2) - (popup_height // 2)
+
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+
+        if popup_x < 0: popup_x = 0
+        if popup_y < 0: popup_y = 0
+        if popup_x + popup_width > screen_width: popup_x = screen_width - popup_width
+        if popup_y + popup_height > screen_height: popup_y = screen_height - popup_height
+
+        options_window.geometry(f"{popup_width}x{popup_height}+{int(popup_x)}+{int(popup_y)}")
 
         # Prevent multiple option windows
         options_window.transient(self.root) # Set to be transient to the main window
         options_window.grab_set() # Grab focus
 
-        voice_checkbutton = tk.Checkbutton(
-            options_window,
-            text="Voice Active",
-            variable=self.voice_active_var,
-            command=self.save_options, # Save options when checkbutton state changes
+        # Import the ToggleSwitch class
+        from toggle_switch import ToggleSwitch
+
+        # Define a font for the label next to the toggle switch
+        toggle_label_font = ("Arial", 16)
+
+        # Create a frame to hold the label and the toggle switch for better alignment
+        voice_option_frame = tk.Frame(options_window, bg=global_bg)
+        # Pack it to fill x to allow centering of its content if window is wider,
+        # or just pack normally if a fixed width for options_window is always used.
+        # Given popup_width is fixed at 300, fill='x' is good.
+        voice_option_frame.pack(pady=20, padx=20, fill='x')
+
+
+        voice_label = tk.Label(
+            voice_option_frame,
+            text="Voice Active:",
             bg=global_bg,
-            font=button_font, # Using button_font, can be changed if a different style is preferred
-            selectcolor=button_bg, # To make the check mark background more visible if needed
-            activebackground=global_bg,
-            activeforeground='white', # fg when mouse is over
-            fg='white' # text color
+            font=toggle_label_font,
+            fg='white'
         )
-        voice_checkbutton.pack(pady=20, padx=20, anchor='w')
+        voice_label.pack(side=tk.LEFT, padx=(0, 10))
+
+        # Instantiate the ToggleSwitch
+        voice_toggle = ToggleSwitch(
+            voice_option_frame,
+            variable=self.voice_active_var,
+            command=self.save_options,
+            width=44,
+            height=22
+        )
+        voice_toggle.pack(side=tk.LEFT)
 
         # Make sure the window is brought to the front and focused
         options_window.lift()
