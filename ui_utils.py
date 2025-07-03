@@ -117,33 +117,54 @@ def create_rounded_button_image(text, width, height, corner_radius,
     draw = ImageDraw.Draw(button_shape)
 
     # 3. Load font
-    font_to_try = font_name if font_name else DEFAULT_FONT_NAME
-
-    font_path = get_font_path(font_to_try, font_weight)
-
-    try:
-        font = ImageFont.truetype(font_path, font_size, layout_engine=ImageFont.LAYOUT_RAQM)
-        # Test if the gear symbol can be rendered if it's the text
-        if text == '⚙':
-            if not font.getmask(text).getbbox(): # Returns None if char is not in font
-                 raise IOError("Font does not support '⚙' character.")
-    except IOError:
-        # Try Tahoma as a known good Unicode font on Windows, or DejaVuSans on Linux
-        # print(f"Warning: Font '{font_path}' not found or unsuitable. Trying fallbacks.")
-        fallback_path = get_font_path(GENERIC_FALLBACK_FONT_NAME, font_weight)
-        try:
-            font = ImageFont.truetype(fallback_path, font_size, layout_engine=ImageFont.LAYOUT_RAQM)
-            if text == '⚙' and not font.getmask(text).getbbox():
-                raise IOError(f"Fallback font {GENERIC_FALLBACK_FONT_NAME} also does not support '⚙'.")
-        except IOError:
-            fallback_path_2 = get_font_path(FALLBACK_FONT_NAME, font_weight)
+    # 3. Load font
+    font_loaded = False
+    if text == '⚙': # Prioritize symbol fonts for the gear character
+        symbol_fonts_to_try = ["Segoe UI Symbol", "Symbola", "Noto Sans Symbols", "DejaVu Sans"]
+        for symbol_font_name in symbol_fonts_to_try:
             try:
-                font = ImageFont.truetype(fallback_path_2, font_size, layout_engine=ImageFont.LAYOUT_RAQM)
-                if text == '⚙' and not font.getmask(text).getbbox():
-                    raise IOError(f"Fallback font {FALLBACK_FONT_NAME} also does not support '⚙'.")
+                # We don't typically specify weight for symbol fonts, assume 'normal'
+                symbol_font_path = get_font_path(symbol_font_name, "normal")
+                font = ImageFont.truetype(symbol_font_path, font_size, layout_engine=ImageFont.LAYOUT_RAQM)
+                if font.getmask(text).getbbox(): # Check if '⚙' is actually in this font
+                    font_loaded = True
+                    # print(f"Successfully loaded symbol font '{symbol_font_name}' for '⚙'")
+                    break
+                # else:
+                    # print(f"Symbol font '{symbol_font_name}' found but does not contain '⚙'.")
             except IOError:
-                print(f"Warning: Fallback fonts also not found or unsuitable. Using Pillow's default font for '{text}'.")
-                font = ImageFont.load_default() # This might cause the UnicodeEncodeError for '⚙'
+                # print(f"Symbol font '{symbol_font_name}' not found. Trying next.")
+                pass
+        if not font_loaded:
+            print(f"Warning: Could not find a dedicated symbol font for '⚙'. Will try standard fonts.")
+
+    if not font_loaded:
+        font_to_try = font_name if font_name else DEFAULT_FONT_NAME
+        font_path = get_font_path(font_to_try, font_weight)
+        try:
+            font = ImageFont.truetype(font_path, font_size, layout_engine=ImageFont.LAYOUT_RAQM)
+            if text == '⚙' and not font.getmask(text).getbbox():
+                 raise IOError(f"Font '{font_path}' does not support '⚙' character.")
+            font_loaded = True
+        except IOError:
+            # print(f"Warning: Font '{font_path}' not found or unsuitable. Trying fallbacks.")
+            fallback_path = get_font_path(GENERIC_FALLBACK_FONT_NAME, font_weight)
+            try:
+                font = ImageFont.truetype(fallback_path, font_size, layout_engine=ImageFont.LAYOUT_RAQM)
+                if text == '⚙' and not font.getmask(text).getbbox():
+                    raise IOError(f"Fallback font {GENERIC_FALLBACK_FONT_NAME} also does not support '⚙'.")
+                font_loaded = True
+            except IOError:
+                fallback_path_2 = get_font_path(FALLBACK_FONT_NAME, font_weight)
+                try:
+                    font = ImageFont.truetype(fallback_path_2, font_size, layout_engine=ImageFont.LAYOUT_RAQM)
+                    if text == '⚙' and not font.getmask(text).getbbox():
+                        raise IOError(f"Fallback font {FALLBACK_FONT_NAME} also does not support '⚙'.")
+                    font_loaded = True
+                except IOError:
+                    print(f"Warning: All specified and fallback fonts not found or unsuitable for '{text}'. Using Pillow's default font.")
+                    font = ImageFont.load_default() # This is the most likely cause of tofu for '⚙'
+                    # No font_loaded = True here, as default font might not support '⚙'
 
     # 4. Calculate text position for centering
     # Use textbbox for more accurate positioning
