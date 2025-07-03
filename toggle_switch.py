@@ -9,7 +9,7 @@ class ToggleSwitch(tk.Canvas):
         self.width = width
         self.height = height
         self.knob_diameter = height - 4  # Knob slightly smaller than canvas height, with 2px padding top/bottom
-        self.track_color_on = '#1e81b0'  # Dark Blue (global_bg)
+        self.track_color_on = '#abdbe3'  # Light Blue (button_bg, for better contrast with window bg)
         self.track_color_off = '#cccccc'  # Light Gray
         self.knob_color_on = '#ffffff'    # White
         self.knob_color_off = '#a0a0a0'   # Medium Gray
