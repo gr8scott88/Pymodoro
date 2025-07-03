@@ -51,7 +51,7 @@ global_bg = '#1e81b0'  # Darker Bl]ue
 # button_bg = '#eab676'  # Tan
 button_bg = '#abdbe3'  # Light Blue
 # tkFont.Font(family="Helvetica",size=36,weight="bold")
-button_font = ("Arial", 15, 'bold')
+button_font = ("Arial", 30, 'bold') # Doubled font size from 15 to 30
 
 
 def configure_logger(log_level='Debug'):
@@ -328,10 +328,11 @@ class Pymodoro:
             self.reset_button.pack(side='left', padx='5')
 
     def add_options_widget(self, state_frame_as_master):
-        options_btn_size_px = 53 # Increased by 50% from 35 (52.5 -> 53)
-        options_font_size = 25   # Increased from 15 to better fit larger button
+        options_btn_size_px = 53 # Current large size
+        options_font_size = 30   # Doubled original (15*2=30), aligned with new button_font size
         corner_radius_px = 5
-        font_name_str, _, font_weight_str = button_font # Use bold from global button_font
+        font_name_str, _, font_weight_str = button_font # Font name and weight will be from new button_font
+        # Note: The font_size from button_font (30) is not used here, options_font_size (30) is explicit.
         text_color_str = '#000000'
 
         self.options_button_img = create_rounded_button_image(
