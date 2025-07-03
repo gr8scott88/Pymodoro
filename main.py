@@ -12,6 +12,7 @@ import os
 from datetime import datetime
 import pygame # Added for pygame mixer
 import json # Added for options persistence
+from ui_utils import create_rounded_button_image # Added for rounded buttons
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 OPTIONS_FILE = os.path.join(script_dir, 'options.json')
@@ -270,40 +271,83 @@ class Pymodoro:
         self.state_image_lbl.pack(anchor='center')
 
     def add_control_widget(self, parent):
+        self.control_frame = tk.Frame(master=parent, height=125, bg=global_bg)
+        self.control_frame.pack(anchor='center', pady='25')
+
+        # Define standard dimensions and style for control buttons
+        btn_width_px = 120  # Adjusted pixel width
+        btn_height_px = 40  # Adjusted pixel height
+        corner_radius_px = 5
+        font_name_str, font_size_int, font_weight_str = button_font
+        text_color_str = '#000000' # Black text for light blue button
+
         if self.state == State.Ready:
-            self.control_frame = tk.Frame(master=parent, height=125, bg=global_bg)
-            self.control_frame.pack(anchor='center', pady='25')
-
-            self.go_button = tk.Button(master=self.control_frame, text='Go!', width='15', pady='5', command=self.go, bg=button_bg, font=button_font)
+            # Go Button
+            self.go_button_img = create_rounded_button_image(
+                text='Go!', width=btn_width_px, height=btn_height_px, corner_radius=corner_radius_px,
+                bg_color=button_bg, text_color=text_color_str, font_name=font_name_str,
+                font_size=font_size_int, font_weight=font_weight_str
+            )
+            self.go_button = tk.Button(master=self.control_frame, image=self.go_button_img,
+                                       command=self.go, borderwidth=0, relief=tk.FLAT, bg=global_bg)
+            self.go_button.image = self.go_button_img # Keep reference
             self.go_button.pack(side='left', padx='5')
-
         else:
-            self.control_frame = tk.Frame(master=parent, height=125, bg=global_bg)
-            self.control_frame.pack(anchor='center', pady='25')
-
-            self.start_stop_button = tk.Button(master=self.control_frame, text='Pause', width='15', pady='5',
-                                             command=self.start_stop, bg=button_bg, font=button_font)
+            # Pause/Start Button
+            current_text = 'Pause' if self.timer_active else 'Start'
+            self.start_stop_button_img = create_rounded_button_image(
+                text=current_text, width=btn_width_px, height=btn_height_px, corner_radius=corner_radius_px,
+                bg_color=button_bg, text_color=text_color_str, font_name=font_name_str,
+                font_size=font_size_int, font_weight=font_weight_str
+            )
+            self.start_stop_button = tk.Button(master=self.control_frame, image=self.start_stop_button_img,
+                                             command=self.start_stop, borderwidth=0, relief=tk.FLAT, bg=global_bg)
+            self.start_stop_button.image = self.start_stop_button_img # Keep reference
             self.start_stop_button.pack(side='left', padx='5')
 
-            skip_button = tk.Button(master=self.control_frame, text='Skip', width='15', pady='5', command=self.skip, bg=button_bg, font=button_font)
-            skip_button.pack(side='left', padx='5')
+            # Skip Button
+            self.skip_button_img = create_rounded_button_image(
+                text='Skip', width=btn_width_px, height=btn_height_px, corner_radius=corner_radius_px,
+                bg_color=button_bg, text_color=text_color_str, font_name=font_name_str,
+                font_size=font_size_int, font_weight=font_weight_str
+            )
+            self.skip_button = tk.Button(master=self.control_frame, image=self.skip_button_img,
+                                        command=self.skip, borderwidth=0, relief=tk.FLAT, bg=global_bg)
+            self.skip_button.image = self.skip_button_img # Keep reference
+            self.skip_button.pack(side='left', padx='5')
 
-            reset_button = tk.Button(master=self.control_frame, text='Restart', width='15', pady='5', command=self.reset, bg=button_bg, font=button_font)
-            reset_button.pack(side='left', padx='5')
+            # Reset Button (Restart)
+            self.reset_button_img = create_rounded_button_image(
+                text='Restart', width=btn_width_px, height=btn_height_px, corner_radius=corner_radius_px,
+                bg_color=button_bg, text_color=text_color_str, font_name=font_name_str,
+                font_size=font_size_int, font_weight=font_weight_str
+            )
+            self.reset_button = tk.Button(master=self.control_frame, image=self.reset_button_img,
+                                         command=self.reset, borderwidth=0, relief=tk.FLAT, bg=global_bg)
+            self.reset_button.image = self.reset_button_img # Keep reference
+            self.reset_button.pack(side='left', padx='5')
 
     def add_options_widget(self, state_frame_as_master):
-        # The options_frame is no longer needed.
-        # The options_button will be a child of state_frame_as_master and placed on top of it.
-        self.options_button = tk.Button(
-            master=state_frame_as_master, # Parent is now state_frame
-            text='⚙',
-            width='3', # Keep it small
-            pady='0',
-            command=self.open_options_menu,
-            bg=button_bg,
-            font=("Arial", 15, 'bold'),
-            relief=tk.FLAT # Optional: make it look flatter if it's "on top"
+        options_btn_size_px = 30 # Smaller button for icon
+        options_font_size = 15
+        corner_radius_px = 5
+        font_name_str, _, font_weight_str = button_font # Use bold from global button_font
+        text_color_str = '#000000'
+
+        self.options_button_img = create_rounded_button_image(
+            text='⚙', width=options_btn_size_px, height=options_btn_size_px, corner_radius=corner_radius_px,
+            bg_color=button_bg, text_color=text_color_str, font_name=font_name_str, # Arial
+            font_size=options_font_size, font_weight=font_weight_str # Bold
         )
+        self.options_button = tk.Button(
+            master=state_frame_as_master,
+            image=self.options_button_img,
+            command=self.open_options_menu,
+            borderwidth=0,
+            relief=tk.FLAT,
+            bg=global_bg # Match parent frame for seamless look if image has transparency
+        )
+        self.options_button.image = self.options_button_img # Keep reference
         # Place the button on the right side, vertically centered, with some padding from the edge.
         # Using relx=1.0 and anchor='ne' (top-right) or 'e' (east/center-right)
         # Let's try anchor='ne' and then adjust with x, y padding.
@@ -383,13 +427,26 @@ class Pymodoro:
         options_window.focus_force()
 
         # Example: Close button for the options window
+        btn_width_px = 100
+        btn_height_px = 35
+        corner_radius_px = 5
+        font_name_str, font_size_int, font_weight_str = button_font
+        text_color_str = '#000000'
+
+        self.options_close_button_img = create_rounded_button_image(
+            text="Close", width=btn_width_px, height=btn_height_px, corner_radius=corner_radius_px,
+            bg_color=button_bg, text_color=text_color_str, font_name=font_name_str,
+            font_size=font_size_int, font_weight=font_weight_str
+        )
         close_button = tk.Button(
             options_window,
-            text="Close",
+            image=self.options_close_button_img,
             command=options_window.destroy,
-            bg=button_bg,
-            font=button_font
+            borderwidth=0,
+            relief=tk.FLAT,
+            bg=global_bg # Match parent for seamless look
         )
+        close_button.image = self.options_close_button_img # Keep reference
         close_button.pack(pady=10)
 
     def load_options(self):
@@ -508,12 +565,35 @@ class Pymodoro:
     def start_stop(self):
         if self.timer_active:
             self.timer_active = False
-            self.start_stop_button['text'] = 'Start'
+            # self.start_stop_button['text'] = 'Start' # Original text update
             self.state_lbl['text'] = f'{self.state.name} - Paused'
         else:
             self.timer_active = True
-            self.start_stop_button['text'] = 'Pause'
+            # self.start_stop_button['text'] = 'Pause' # Original text update
             self.set_state_label()
+
+        # Update the image for start/stop button regardless of state change
+        # This requires add_control_widget to be designed to be callable for updates,
+        # or a specific update method for the button image.
+        # For now, the text on the button image is set at creation time.
+        # A better approach would be to have start/pause images pre-created or a function to update it.
+
+        # Quick fix: Re-create the button image with new text
+        btn_width_px = 120
+        btn_height_px = 40
+        corner_radius_px = 5
+        font_name_str, font_size_int, font_weight_str = button_font
+        text_color_str = '#000000'
+        current_text = 'Start' if not self.timer_active else 'Pause'
+
+        self.start_stop_button_img = create_rounded_button_image(
+            text=current_text, width=btn_width_px, height=btn_height_px, corner_radius=corner_radius_px,
+            bg_color=button_bg, text_color=text_color_str, font_name=font_name_str,
+            font_size=font_size_int, font_weight=font_weight_str
+        )
+        self.start_stop_button.configure(image=self.start_stop_button_img)
+        self.start_stop_button.image = self.start_stop_button_img
+
 
     def increase(self):
         self.time_remaining += 1
