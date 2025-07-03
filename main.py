@@ -72,6 +72,8 @@ class Pymodoro:
         logger.debug('Pygame initialized')
         self.root = tk.Tk()
         self.voice_active_var = tk.BooleanVar(value=True) # For the voice active checkbutton
+        # Default window geometry
+        self.window_geometry = {"width": 700, "height": 325, "x": None, "y": None}
         self.load_options() # Load options before building window
         
         # Set the Windows taskbar icon if running on Windows
@@ -100,6 +102,7 @@ class Pymodoro:
         self.last_interaction = time.time()
         self.root.bind('<Key>', self.update_interaction)
         self.root.bind('<Button>', self.update_interaction)
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close) # Handle window close event
         self.start()
 
     def update_interaction(self, event=None):
@@ -183,7 +186,25 @@ class Pymodoro:
 
     def build_window(self):
         self.root.title("Pymodoro")
-        self.root.geometry("700x325")
+
+        # Apply loaded or default geometry
+        width = self.window_geometry["width"]
+        height = self.window_geometry["height"]
+        x = self.window_geometry["x"]
+        y = self.window_geometry["y"]
+
+        if x is not None and y is not None:
+            self.root.geometry(f"{width}x{height}+{x}+{y}")
+        else:
+            # Fallback to centering if position is not set (e.g., first run)
+            self.root.geometry(f"{width}x{height}")
+            self.root.update_idletasks() # Ensure window is drawn before centering
+            screen_width = self.root.winfo_screenwidth()
+            screen_height = self.root.winfo_screenheight()
+            center_x = int(screen_width/2 - width / 2)
+            center_y = int(screen_height/2 - height / 2)
+            self.root.geometry(f"{width}x{height}+{center_x}+{center_y}")
+
         self.root.configure(bg=global_bg)
 
         self.main_frame = tk.Frame(master=self.root, bg=global_bg)
@@ -376,33 +397,70 @@ class Pymodoro:
         try:
             with open(OPTIONS_FILE, 'r') as f:
                 options = json.load(f)
+
+                # Load voice_active option
                 if "voice_active" in options:
                     self.voice_active_var.set(options["voice_active"])
                     logger.info(f"Loaded 'voice_active': {options['voice_active']} from {OPTIONS_FILE}")
                 else:
                     logger.info(f"'voice_active' key missing in {OPTIONS_FILE}. Using default True.")
-                    self.voice_active_var.set(True)
-                    should_save_defaults = True # Mark to save the file with the new default key
+                    self.voice_active_var.set(True) # Default value
+                    should_save_defaults = True
+
+                # Load window geometry
+                self.window_geometry["width"] = options.get("window_width", self.window_geometry["width"])
+                self.window_geometry["height"] = options.get("window_height", self.window_geometry["height"])
+                self.window_geometry["x"] = options.get("window_x", self.window_geometry["x"])
+                self.window_geometry["y"] = options.get("window_y", self.window_geometry["y"])
+                if any(key not in options for key in ["window_width", "window_height", "window_x", "window_y"]):
+                    logger.info("One or more window geometry keys missing. Will use defaults and save them.")
+                    should_save_defaults = True
+                else:
+                    logger.info(f"Loaded window geometry: {self.window_geometry} from {OPTIONS_FILE}")
+
         except FileNotFoundError:
-            logger.info(f"{OPTIONS_FILE} not found. Creating with default settings.")
+            logger.info(f"{OPTIONS_FILE} not found. Creating with default settings for all options.")
+            # Set defaults for all options explicitly here
             self.voice_active_var.set(True)
+            # self.window_geometry remains as its initialized defaults
             should_save_defaults = True
         except json.JSONDecodeError:
-            logger.warning(f"Error decoding JSON from {OPTIONS_FILE}. Using default settings and overwriting.")
+            logger.warning(f"Error decoding JSON from {OPTIONS_FILE}. Using default settings for all options and overwriting.")
             self.voice_active_var.set(True)
+            # self.window_geometry remains as its initialized defaults
             should_save_defaults = True
         except Exception as e: # Catch any other unexpected error during loading
-            logger.error(f"Unexpected error loading options: {e}. Using default settings.")
+            logger.error(f"Unexpected error loading options: {e}. Using default settings for all options.")
             self.voice_active_var.set(True)
+            # self.window_geometry remains as its initialized defaults
             should_save_defaults = True
 
         if should_save_defaults:
+            # Call save_options ensuring current (default or loaded) geometry is included
             self.save_options()
 
 
     def save_options(self):
+        # Ensure current geometry is captured if not already set by on_close
+        # This is more of a fallback; ideally, on_close updates self.window_geometry before calling save_options.
+        try:
+            # This might fail if root window is not fully initialized or already destroyed
+            current_width = self.root.winfo_width()
+            current_height = self.root.winfo_height()
+            current_x = self.root.winfo_x()
+            current_y = self.root.winfo_y()
+            # Update self.window_geometry only if these values are sensible (e.g. >0 for width/height)
+            # However, this check is tricky as winfo_x/y can be 0.
+            # For now, let's assume on_close is the primary source for geometry before saving.
+        except tk.TclError: # Window might not exist when save_options is called (e.g. during initial load_options)
+             pass # Keep existing self.window_geometry values
+
         options_to_save = {
-            "voice_active": self.voice_active_var.get()
+            "voice_active": self.voice_active_var.get(),
+            "window_width": self.window_geometry["width"],
+            "window_height": self.window_geometry["height"],
+            "window_x": self.window_geometry["x"],
+            "window_y": self.window_geometry["y"],
         }
         try:
             with open(OPTIONS_FILE, 'w') as f:
@@ -489,6 +547,24 @@ class Pymodoro:
             logger.error(f"Could not play sound {sound_name}. Pygame error: {e}")
         except Exception as e:
             logger.error(f"An unexpected error occurred while trying to play sound {sound_name}: {e}")
+
+    def on_close(self):
+        """Handles actions to be performed when the window is closed."""
+        logger.info("Window closing, saving options...")
+        try:
+            # Update window_geometry with the current size and position
+            self.window_geometry["width"] = self.root.winfo_width()
+            self.window_geometry["height"] = self.root.winfo_height()
+            self.window_geometry["x"] = self.root.winfo_x()
+            self.window_geometry["y"] = self.root.winfo_y()
+            self.save_options()
+        except tk.TclError as e:
+            # This might happen if the window is already destroyed
+            logger.error(f"Error getting window geometry on close: {e}")
+        except Exception as e:
+            logger.error(f"Unexpected error during on_close: {e}")
+        finally:
+            self.root.destroy()
 
 
 if __name__ == '__main__':
